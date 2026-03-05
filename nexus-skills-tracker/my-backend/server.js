@@ -19,7 +19,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:3000",
-      "https://nexus-skills-tracker-fx7kvsuvb-afarhan5s-projects.vercel.app"
+      "https://nexus-skills-tracker-fx7kvsubv-afarhan5s-projects.vercel.app"
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
