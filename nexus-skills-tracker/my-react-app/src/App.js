@@ -8,7 +8,8 @@ import {
   useNavigate
 } from "react-router-dom";
 
-const API = "https://nexus-backend-zrx2.onrender.com";
+// 🔑 Updated API line to use environment variable fallback
+const API = process.env.REACT_APP_API || "https://nexus-backend-zrx2.onrender.com";
 
 const inputStyle = {
   width: "100%", padding: "10px 12px",
@@ -151,7 +152,6 @@ function SkillsPage() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // ✅ FIXED: headers moved inside useEffect
   useEffect(() => {
     const token = localStorage.getItem("token");
     const headers = {
