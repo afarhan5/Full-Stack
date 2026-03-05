@@ -8,7 +8,7 @@ import {
   useNavigate
 } from "react-router-dom";
 
-const API = "http://localhost:5000";
+const API = "https://nexus-backend-zrx2.onrender.com";
 
 const inputStyle = {
   width: "100%", padding: "10px 12px",
