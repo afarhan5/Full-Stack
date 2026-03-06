@@ -9,11 +9,9 @@ const multer = require("multer");
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 require("dotenv").config();
 
-// ── PRISMA ────────────────────────────────────
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
-// ── CLOUDINARY ────────────────────────────────
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -30,14 +28,12 @@ const storage = new CloudinaryStorage({
 });
 const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
-// ── EXPRESS ───────────────────────────────────
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 const JWT_SECRET = process.env.JWT_SECRET || "nexus_secret_key_123";
 
-// ── HELPERS ───────────────────────────────────
 function auth(req, res, next) {
   const token = req.headers.authorization?.split(" ")[1];
   if (!token) return res.status(401).json({ error: "No token provided" });
@@ -62,10 +58,16 @@ const userSelect = {
   phone: true, photo: true, bio: true, createdAt: true
 };
 
-// ── ROOT ──────────────────────────────────────
+// ROOT
 app.get("/", (req, res) => res.send("🚀 Nexus Backend API Running"));
 
-// ── REGISTER ──────────────────────────────────
+// CHECK IF FIRST USER EXISTS (for register hint)
+app.get("/has-users", async (req, res) => {
+  const count = await prisma.user.count();
+  res.json({ hasUsers: count > 0 });
+});
+
+// REGISTER
 app.post("/register", async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -91,7 +93,7 @@ app.post("/register", async (req, res) => {
   }
 });
 
-// ── LOGIN ─────────────────────────────────────
+// LOGIN
 app.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -108,17 +110,15 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// ── GET MY PROFILE ────────────────────────────
+// GET MY PROFILE
 app.get("/me", auth, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({ where: { id: req.user.id }, select: userSelect });
     res.json(user);
-  } catch (err) {
-    res.status(500).json({ error: "Server error" });
-  }
+  } catch (err) { res.status(500).json({ error: "Server error" }); }
 });
 
-// ── UPDATE PROFILE (name, phone, bio) ─────────
+// UPDATE PROFILE
 app.put("/me", auth, async (req, res) => {
   try {
     const { name, phone, bio } = req.body;
@@ -132,12 +132,10 @@ app.put("/me", auth, async (req, res) => {
       select: userSelect
     });
     res.json({ message: "Profile updated!", user: updated, token: makeToken(updated) });
-  } catch (err) {
-    res.status(500).json({ error: "Server error" });
-  }
+  } catch (err) { res.status(500).json({ error: "Server error" }); }
 });
 
-// ── UPLOAD PHOTO ──────────────────────────────
+// UPLOAD PHOTO
 app.post("/me/photo", auth, upload.single("photo"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
@@ -153,7 +151,7 @@ app.post("/me/photo", auth, upload.single("photo"), async (req, res) => {
   }
 });
 
-// ── CHANGE PASSWORD ───────────────────────────
+// CHANGE PASSWORD
 app.put("/change-password", auth, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
@@ -169,12 +167,10 @@ app.put("/change-password", auth, async (req, res) => {
     const hashed = await bcrypt.hash(newPassword, 10);
     await prisma.user.update({ where: { id: req.user.id }, data: { password: hashed } });
     res.json({ message: "Password changed!" });
-  } catch (err) {
-    res.status(500).json({ error: "Server error" });
-  }
+  } catch (err) { res.status(500).json({ error: "Server error" }); }
 });
 
-// ── CHANGE EMAIL ──────────────────────────────
+// CHANGE EMAIL
 app.put("/change-email", auth, async (req, res) => {
   try {
     const { newEmail, password } = req.body;
@@ -194,12 +190,34 @@ app.put("/change-email", auth, async (req, res) => {
       select: userSelect
     });
     res.json({ message: "Email updated!", user: updated, token: makeToken(updated) });
+  } catch (err) { res.status(500).json({ error: "Server error" }); }
+});
+
+// DELETE OWN ACCOUNT
+app.delete("/me", auth, async (req, res) => {
+  try {
+    const { password } = req.body;
+    if (!password) return res.status(400).json({ error: "Password required" });
+
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) return res.status(400).json({ error: "Wrong password" });
+
+    if (user.role === "admin")
+      return res.status(400).json({ error: "Admin cannot delete their own account" });
+
+    await prisma.skill.deleteMany({ where: { userId: req.user.id } });
+    await prisma.roadmapItem.deleteMany({ where: { userId: req.user.id } });
+    await prisma.user.delete({ where: { id: req.user.id } });
+
+    res.json({ message: "Account deleted" });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Server error" });
   }
 });
 
-// ── SKILLS ────────────────────────────────────
+// SKILLS
 app.get("/skills", auth, async (req, res) => {
   try {
     const skills = await prisma.skill.findMany({
@@ -236,11 +254,88 @@ app.delete("/skills/:id", auth, async (req, res) => {
   } catch (err) { res.status(500).json({ error: "Server error" }); }
 });
 
-// ── ADMIN ─────────────────────────────────────
+// ROADMAP (personal per user)
+app.get("/roadmap", auth, async (req, res) => {
+  try {
+    let items = await prisma.roadmapItem.findMany({
+      where: { userId: req.user.id }, orderBy: { order: "asc" }
+    });
+    // Seed default roadmap for new users
+    if (items.length === 0) {
+      const defaults = [
+        "HTML + CSS", "JavaScript", "React", "Node.js + Express",
+        "PostgreSQL + Prisma", "JWT Authentication", "React Router",
+        "Deploy to Internet", "Advanced Full Stack"
+      ];
+      await prisma.roadmapItem.createMany({
+        data: defaults.map((label, order) => ({
+          label, done: true, order, userId: req.user.id
+        }))
+      });
+      items = await prisma.roadmapItem.findMany({
+        where: { userId: req.user.id }, orderBy: { order: "asc" }
+      });
+    }
+    res.json(items);
+  } catch (err) { res.status(500).json({ error: "Server error" }); }
+});
+
+app.post("/roadmap", auth, async (req, res) => {
+  try {
+    const { label } = req.body;
+    if (!label) return res.status(400).json({ error: "Label required" });
+    const count = await prisma.roadmapItem.count({ where: { userId: req.user.id } });
+    const item = await prisma.roadmapItem.create({
+      data: { label, done: false, order: count, userId: req.user.id }
+    });
+    const items = await prisma.roadmapItem.findMany({
+      where: { userId: req.user.id }, orderBy: { order: "asc" }
+    });
+    res.json({ message: "Added!", item, items });
+  } catch (err) { res.status(500).json({ error: "Server error" }); }
+});
+
+app.put("/roadmap/:id", auth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { done, label } = req.body;
+    const item = await prisma.roadmapItem.findUnique({ where: { id } });
+    if (!item || item.userId !== req.user.id)
+      return res.status(403).json({ error: "Not allowed" });
+    const updated = await prisma.roadmapItem.update({
+      where: { id },
+      data: {
+        ...(done !== undefined && { done }),
+        ...(label !== undefined && { label }),
+      }
+    });
+    res.json({ message: "Updated!", item: updated });
+  } catch (err) { res.status(500).json({ error: "Server error" }); }
+});
+
+app.delete("/roadmap/:id", auth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const item = await prisma.roadmapItem.findUnique({ where: { id } });
+    if (!item || item.userId !== req.user.id)
+      return res.status(403).json({ error: "Not allowed" });
+    await prisma.roadmapItem.delete({ where: { id } });
+    const items = await prisma.roadmapItem.findMany({
+      where: { userId: req.user.id }, orderBy: { order: "asc" }
+    });
+    res.json({ message: "Deleted!", items });
+  } catch (err) { res.status(500).json({ error: "Server error" }); }
+});
+
+// ADMIN
 app.get("/admin/users", auth, adminOnly, async (req, res) => {
   try {
     const users = await prisma.user.findMany({
-      select: { id: true, name: true, email: true, role: true, phone: true, photo: true, createdAt: true, _count: { select: { skills: true } } },
+      select: {
+        id: true, name: true, email: true, role: true,
+        phone: true, photo: true, createdAt: true,
+        _count: { select: { skills: true } }
+      },
       orderBy: { createdAt: "asc" }
     });
     res.json(users);
@@ -259,7 +354,11 @@ app.put("/admin/users/:id", auth, adminOnly, async (req, res) => {
         ...(phone !== undefined && { phone }),
         ...(role && { role }),
       },
-      select: { id: true, name: true, email: true, role: true, phone: true, photo: true, createdAt: true, _count: { select: { skills: true } } }
+      select: {
+        id: true, name: true, email: true, role: true,
+        phone: true, photo: true, createdAt: true,
+        _count: { select: { skills: true } }
+      }
     });
     res.json({ message: "User updated!", user: updated });
   } catch (err) { res.status(500).json({ error: "Server error" }); }
@@ -268,11 +367,17 @@ app.put("/admin/users/:id", auth, adminOnly, async (req, res) => {
 app.delete("/admin/users/:id", auth, adminOnly, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    if (id === req.user.id) return res.status(400).json({ error: "Cannot delete yourself" });
+    if (id === req.user.id)
+      return res.status(400).json({ error: "Cannot delete yourself" });
     await prisma.skill.deleteMany({ where: { userId: id } });
+    await prisma.roadmapItem.deleteMany({ where: { userId: id } });
     await prisma.user.delete({ where: { id } });
     const users = await prisma.user.findMany({
-      select: { id: true, name: true, email: true, role: true, phone: true, photo: true, createdAt: true, _count: { select: { skills: true } } },
+      select: {
+        id: true, name: true, email: true, role: true,
+        phone: true, photo: true, createdAt: true,
+        _count: { select: { skills: true } }
+      },
       orderBy: { createdAt: "asc" }
     });
     res.json({ message: "User deleted!", users });
@@ -292,6 +397,5 @@ app.get("/admin/stats", auth, adminOnly, async (req, res) => {
   } catch (err) { res.status(500).json({ error: "Server error" }); }
 });
 
-// ── START ─────────────────────────────────────
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
