@@ -18,11 +18,23 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   skills    Skill[]
+  roadmap   RoadmapItem[]
 }
+
 
 model Skill {
   id        Int      @id @default(autoincrement())
   name      String
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model RoadmapItem {
+  id        Int      @id @default(autoincrement())
+  label     String
+  done      Boolean  @default(false)
+  order     Int      @default(0)
   userId    Int
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
