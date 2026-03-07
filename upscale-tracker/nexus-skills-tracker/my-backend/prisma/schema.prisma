@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  name         String
+  email        String        @unique
+  password     String
+  role         String        @default("user")
+  phone        String?
+  photo        String?
+  bio          String?
+  dailyGoal    Int           @default(2)
+  streak       Int           @default(0)
+  lastActiveAt DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  skills       Skill[]
+  roadmaps     Roadmap[]
+  achievements Achievement[]
+}
+
+model Skill {
+  id        Int      @id @default(autoincrement())
+  name      String
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Roadmap {
+  id        Int      @id @default(autoincrement())
+  title     String
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  lessons   Lesson[]
+}
+
+model Lesson {
+  id          Int       @id @default(autoincrement())
+  title       String
+  done        Boolean   @default(false)
+  order       Int       @default(0)
+  notes       String?
+  timeSpent   Int       @default(0)
+  completedAt DateTime?
+  roadmapId   Int
+  roadmap     Roadmap   @relation(fields: [roadmapId], references: [id])
+  createdAt   DateTime  @default(now())
+}
+
+model Achievement {
+  id        Int      @id @default(autoincrement())
+  type      String
+  label     String
+  icon      String
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  earnedAt  DateTime @default(now())
+}
