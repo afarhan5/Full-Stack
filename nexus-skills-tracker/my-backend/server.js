@@ -235,14 +235,19 @@ app.put("/me", auth, async (req, res) => {
 app.post("/me/photo", auth, upload.single("photo"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+    const photoUrl = req.file.secure_url || req.file.path;
+    console.log("Uploaded photo URL:", photoUrl);
     const updated = await prisma.user.update({
       where: { id: req.user.id },
-      data: { photo: req.file.path },
+      data: { photo: photoUrl },
       select: userSelect
     });
     await checkAchievements(req.user.id);
     res.json({ message: "Photo updated!", user: updated, token: makeToken(updated) });
-  } catch (err) { res.status(500).json({ error: "Server error" }); }
+  } catch (err) {
+    console.error("Photo upload error:", err);
+    res.status(500).json({ error: "Upload failed: " + err.message });
+  }
 });
 
 // ── CHANGE PASSWORD ───────────────────────────
