@@ -1,6 +1,6 @@
 'use client';
-import LifeOS from './LifeOS';
+import UpscaleTracker from './UpscaleTracker';
 
 export default function Home() {
-  return <LifeOS />;
+  return <UpscaleTracker />;
 }
