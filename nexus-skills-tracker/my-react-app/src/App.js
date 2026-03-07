@@ -49,6 +49,10 @@ const G = ({ t }) => (
       .g4{grid-template-columns:repeat(2,1fr)!important}
       .g3{grid-template-columns:1fr!important}
       .g2{grid-template-columns:1fr!important}
+      .road-layout{grid-template-columns:1fr!important}
+      .dash-grid{grid-template-columns:1fr!important}
+      .admin-grid{grid-template-columns:repeat(2,1fr)!important}
+      .page-pad{padding:20px 12px!important}
     }
   `}</style>
 );
@@ -137,37 +141,64 @@ function Navbar({ user, onLogout, t, toggle, isDark }) {
     { to: "/profile", icon: "👤", label: "Profile" },
     ...(user?.role === "admin" ? [{ to: "/admin", icon: "⚡", label: "Admin" }] : [])
   ];
+  const mobileLinks = links.slice(0, 5);
   return (
-    <nav style={{ background: t.navbar, borderBottom: `1px solid ${t.border}`, padding: "0 20px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 200, backdropFilter: "blur(16px)" }}>
-      <span style={{ fontFamily: "'Space Mono',monospace", color: t.accent, fontSize: 17, letterSpacing: 5, fontWeight: 700 }}>NEXUS</span>
-      <div className="hm" style={{ display: "flex", gap: 2 }}>
-        {links.map(l => (
-          <Link key={l.to} to={l.to} style={{ fontSize: 12, padding: "6px 12px", borderRadius: 8, fontWeight: 600, color: loc.pathname === l.to ? t.accent : t.muted, background: loc.pathname === l.to ? t.accentDim : "transparent", transition: "all .2s", display: "flex", alignItems: "center", gap: 5 }}>
-            <span>{l.icon}</span><span>{l.label}</span>
+    <>
+      {/* Desktop navbar */}
+      <nav style={{ background: t.navbar, borderBottom: `1px solid ${t.border}`, padding: "0 20px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 200, backdropFilter: "blur(16px)" }}>
+        <span style={{ fontFamily: "'Space Mono',monospace", color: t.accent, fontSize: 17, letterSpacing: 5, fontWeight: 700 }}>NEXUS</span>
+        <div className="hm" style={{ display: "flex", gap: 2 }}>
+          {links.map(l => (
+            <Link key={l.to} to={l.to} style={{ fontSize: 12, padding: "6px 12px", borderRadius: 8, fontWeight: 600, color: loc.pathname === l.to ? t.accent : t.muted, background: loc.pathname === l.to ? t.accentDim : "transparent", transition: "all .2s", display: "flex", alignItems: "center", gap: 5 }}>
+              <span>{l.icon}</span><span>{l.label}</span>
+            </Link>
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {user?.streak > 0 && (
+            <div className="hm" style={{ background: t.accentDim, border: `1px solid ${t.accent}30`, borderRadius: 20, padding: "4px 10px", fontSize: 12, color: t.accent, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
+              🔥 {user.streak}
+            </div>
+          )}
+          <button onClick={toggle} style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 8, padding: "6px 10px", fontSize: 14, color: t.text }}>{isDark ? "☀️" : "🌙"}</button>
+          <Link to="/profile" style={{ display: "flex", alignItems: "center", gap: 8, background: t.accentDim, border: `1px solid ${t.accent}30`, borderRadius: 10, padding: "4px 10px" }}>
+            <Av u={user} size={24} t={t} />
+            <div className="hm" style={{ lineHeight: 1.3 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: t.text }}>{user?.name}</div>
+              <div style={{ fontSize: 9, color: t.accent, letterSpacing: 1 }}>{user?.role?.toUpperCase()}</div>
+            </div>
           </Link>
-        ))}
-      </div>
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        {user?.streak > 0 && (
-          <div style={{ background: t.accentDim, border: `1px solid ${t.accent}30`, borderRadius: 20, padding: "4px 10px", fontSize: 12, color: t.accent, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
-            🔥 {user.streak}
-          </div>
-        )}
-        <button onClick={toggle} style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 8, padding: "6px 10px", fontSize: 14, color: t.text }}>{isDark ? "☀️" : "🌙"}</button>
-        <Link to="/profile" style={{ display: "flex", alignItems: "center", gap: 8, background: t.accentDim, border: `1px solid ${t.accent}30`, borderRadius: 10, padding: "4px 10px" }}>
-          <Av u={user} size={24} t={t} />
-          <div className="hm" style={{ lineHeight: 1.3 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: t.text }}>{user?.name}</div>
-            <div style={{ fontSize: 9, color: t.accent, letterSpacing: 1 }}>{user?.role?.toUpperCase()}</div>
-          </div>
-        </Link>
-        <button onClick={onLogout} style={{ background: "none", border: `1px solid ${t.danger}50`, color: t.danger, padding: "6px 12px", borderRadius: 8, fontSize: 11, fontWeight: 700, transition: "all .2s" }}
-          onMouseEnter={e => { e.currentTarget.style.background = t.danger; e.currentTarget.style.color = "#fff"; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = t.danger; }}>
-          Logout
+          <button onClick={onLogout} className="hm" style={{ background: "none", border: `1px solid ${t.danger}50`, color: t.danger, padding: "6px 12px", borderRadius: 8, fontSize: 11, fontWeight: 700, transition: "all .2s" }}
+            onMouseEnter={e => { e.currentTarget.style.background = t.danger; e.currentTarget.style.color = "#fff"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = t.danger; }}>
+            Logout
+          </button>
+        </div>
+      </nav>
+      {/* Mobile bottom tab bar */}
+      <style>{`
+        .mob-tab { display: none; }
+        @media(max-width:768px){
+          .mob-tab { display: flex !important; }
+          .mob-content { padding-bottom: 70px; }
+        }
+      `}</style>
+      <div className="mob-tab" style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 300, background: t.navbar, borderTop: `1px solid ${t.border}`, height: 62, alignItems: "center", justifyContent: "space-around", backdropFilter: "blur(16px)" }}>
+        {mobileLinks.map(l => {
+          const active = loc.pathname === l.to;
+          return (
+            <Link key={l.to} to={l.to} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "6px 10px", borderRadius: 10, background: active ? t.accentDim : "transparent", minWidth: 48, transition: "all .2s" }}>
+              <span style={{ fontSize: 20 }}>{l.icon}</span>
+              <span style={{ fontSize: 9, color: active ? t.accent : t.muted, fontWeight: active ? 700 : 500 }}>{l.label}</span>
+            </Link>
+          );
+        })}
+        <button onClick={onLogout} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "6px 10px", background: "none", border: "none", minWidth: 48 }}>
+          <span style={{ fontSize: 20 }}>🚪</span>
+          <span style={{ fontSize: 9, color: t.danger, fontWeight: 500 }}>Logout</span>
         </button>
       </div>
-    </nav>
+    </>
   );
 }
 
@@ -252,7 +283,7 @@ function HomePage({ user, t }) {
   const goalPct = stats ? Math.min(100, Math.round(stats.todayDone / stats.dailyGoal * 100)) : 0;
 
   return (
-    <div style={{ padding: "36px 20px", maxWidth: 1100, margin: "0 auto" }}>
+    <div style={{ padding: "36px 20px", maxWidth: 1100, margin: "0 auto" }} className="mob-content page-pad">
       <div className="fu" style={{ marginBottom: 36 }}>
         <p style={{ color: t.muted, fontSize: 11, letterSpacing: 3, textTransform: "uppercase", marginBottom: 10, fontFamily: "'Space Mono',monospace" }}>Welcome back</p>
         <h1 style={{ fontSize: "clamp(22px,4vw,44px)", fontWeight: 800, lineHeight: 1.2 }}>
@@ -333,7 +364,7 @@ function DashboardPage({ t }) {
         <Stat label="Badges" value={stats?.totalAchievements ?? 0} color={t.yellow} icon="🏅" cls="fu4" t={t} />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, marginBottom: 18 }} className="g2">
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, marginBottom: 18 }} className="g2 dash-grid">
         {/* Overall Progress */}
         <div className="fu2" style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 16, padding: 24 }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
@@ -597,7 +628,7 @@ function RoadmapsPage({ t }) {
         </button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: selected ? "280px 1fr" : "1fr", gap: 20 }} className={selected ? "" : "g3"}>
+      <div style={{ display: "grid", gridTemplateColumns: selected ? "280px 1fr" : "1fr", gap: 20 }} className={`road-layout ${selected ? "" : "g3"}`}>
         {/* Roadmap List */}
         <div>
           <div style={{ color: t.muted, fontSize: 10, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12, fontFamily: "'Space Mono',monospace" }}>
@@ -881,13 +912,24 @@ function ProfilePage({ user, onUpdate, t }) {
 
   async function uploadPhoto(e) {
     const file = e.target.files[0]; if (!file) return;
+    // Validate file size (max 4MB)
+    if (file.size > 4 * 1024 * 1024) { tk("Image too large. Max 4MB.", "error"); return; }
     setPhotoLoad(true);
-    const fd = new FormData(); fd.append("photo", file);
-    const res = await fetch(API + "/me/photo", { method: "POST", headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }, body: fd });
-    const d = await res.json();
-    if (d.error) tk(d.error, "error");
-    else { setProfile(d.user); localStorage.setItem("token", d.token); onUpdate(d.user); tk("Photo updated!"); }
+    try {
+      const fd = new FormData(); fd.append("photo", file);
+      const token = localStorage.getItem("token");
+      const res = await fetch(API + "/me/photo", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${token}` },
+        body: fd
+      });
+      const d = await res.json();
+      if (d.error) tk(d.error, "error");
+      else { setProfile(d.user); localStorage.setItem("token", d.token); onUpdate(d.user); tk("Photo updated! ✨"); }
+    } catch (err) { tk("Upload failed. Check connection.", "error"); }
     setPhotoLoad(false);
+    // Reset file input so same file can be selected again
+    e.target.value = "";
   }
 
   async function changePw() {
@@ -1115,7 +1157,7 @@ function AdminPage({ t }) {
       </div>
 
       {stats && (
-        <div className="g4" style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 12, marginBottom: 24 }}>
+        <div className="g4 admin-grid" style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 12, marginBottom: 24 }}>
           <Stat label="Users" value={stats.totalUsers} color={t.blue} icon="👥" cls="fu1" t={t} />
           <Stat label="Roadmaps" value={stats.totalRoadmaps} color={t.accent} icon="🗺️" cls="fu2" t={t} />
           <Stat label="Lessons" value={stats.totalLessons} color={t.purple} icon="📚" cls="fu3" t={t} />
