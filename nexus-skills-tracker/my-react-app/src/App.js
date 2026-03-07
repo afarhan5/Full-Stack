@@ -78,17 +78,7 @@ function Av({ u, size = 38, t }) {
   );
 }
 
-function Card({ cls = "fu", style: s, children, t, hover = false, onClick }) {
-  const [hov, setHov] = useState(false);
-  return (
-    <div className={cls} onClick={onClick}
-      onMouseEnter={() => hover && setHov(true)}
-      onMouseLeave={() => hover && setHov(false)}
-      style={{ background: hov ? t.cardHover : t.card, border: `1px solid ${t.border}`, borderRadius: 16, transition: "all .25s", ...s }}>
-      {children}
-    </div>
-  );
-}
+
 
 function Stat({ label, value, color, icon, cls = "fu", t }) {
   return (
@@ -449,7 +439,7 @@ function RoadmapsPage({ t }) {
     fetch(API + "/roadmaps", { headers: H() }).then(r => r.json()).then(d => { if (Array.isArray(d)) { setRoadmaps(d); if (selected) setSelected(d.find(r => r.id === selected.id) || null); } setLoading(false); });
   }, [selected]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   // Timer
   useEffect(() => {
@@ -812,9 +802,8 @@ function SkillsPage({ t }) {
 // ── ACHIEVEMENTS PAGE ─────────────────────────
 function AchievementsPage({ t }) {
   const [achievements, setAchievements] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => { fetch(API + "/achievements", { headers: H() }).then(r => r.json()).then(d => { if (Array.isArray(d)) setAchievements(d); setLoading(false); }); }, []);
+  useEffect(() => { fetch(API + "/achievements", { headers: H() }).then(r => r.json()).then(d => { if (Array.isArray(d)) setAchievements(d); }); }, []);
 
   const allBadges = [
     { type: "JOINED", label: "Joined Nexus!", icon: "🚀", desc: "Created your account" },
